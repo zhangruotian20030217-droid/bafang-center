@@ -30,7 +30,7 @@ jobs:
           test -s "$FLY_DATA/brain.npz"
           test -s "$FLY_DATA/weights.npz"
           sha256sum "$FLY_DATA/brain.npz" "$FLY_DATA/weights.npz"
-          sha256sum benchmark_data.json artifact_aggregate_v04.json jarvisops_v04_benchmark_runner.py
+          sha256sum benchmark_data.json artifact_aggregate_v04.json baseline_reference_v04.json jarvisops_v04_benchmark_runner.py
       - name: Run 4 encoders x 50 rewired controls
         run: python jarvisops_v04_benchmark_runner.py --rewires 50
       - name: Upload canonical benchmark receipt
