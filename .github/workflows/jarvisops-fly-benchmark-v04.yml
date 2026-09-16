@@ -1,0 +1,41 @@
+name: JarvisOps Fly Full Corpus Benchmark v0.4
+on:
+  push:
+    branches: [jarvisops-fly-benchmark-v04]
+  workflow_dispatch:
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      FLY_DATA: /home/runner/fly-data
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Cache MaleCNS prebuilt brain
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/fly-data
+          key: flybrain-malecns-v1-prebuilt
+      - name: Install flybrain
+        run: python -m pip install --upgrade pip && pip install flybrain==0.1.0
+      - name: Ensure MaleCNS
+        run: flybrain download
+      - name: Verify physical brain files and benchmark inputs
+        run: |
+          flybrain info
+          test -s "$FLY_DATA/brain.npz"
+          test -s "$FLY_DATA/weights.npz"
+          sha256sum "$FLY_DATA/brain.npz" "$FLY_DATA/weights.npz"
+          sha256sum benchmark_data.json artifact_aggregate_v04.json jarvisops_v04_benchmark_runner.py
+      - name: Run 4 encoders x 50 rewired controls
+        run: python jarvisops_v04_benchmark_runner.py --rewires 50
+      - name: Upload canonical benchmark receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvisops-fly-full-corpus-v04
+          path: benchmark_result_v04.json
+          if-no-files-found: error
