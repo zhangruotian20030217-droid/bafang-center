@@ -5,3 +5,5 @@ This repository is used as an isolated execution runner for JarvisOps CONNECTOR-
 Only de-identified benchmark vectors and reproducible runner code are stored here. No raw chats, private account data, trading logic, API keys, or RealPing production data are included.
 
 Status: EXPERIMENTAL / NON-PRODUCTION-AUTHORITY.
+
+Benchmark trigger: v0.3 live-run-001
