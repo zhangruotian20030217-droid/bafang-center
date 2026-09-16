@@ -1,0 +1,51 @@
+name: JarvisOps OOS Prelabel Prediction v0.5
+on:
+  push:
+    branches: [jarvisops-oos-validation-v05]
+  workflow_dispatch:
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      FLY_DATA: /home/runner/fly-data
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert OOS labels absent
+        run: |
+          test ! -e oos_labels_v05.json
+          python - <<'PY'
+          import json
+          x=json.load(open('oos_features_v05.json'))
+          assert x['label_fields_included'] is False
+          assert all('false_pass' not in r for r in x['rows'])
+          print('OOS_LABEL_ABSENCE_GATE=PASS')
+          PY
+      - name: Cache MaleCNS prebuilt brain
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/fly-data
+          key: flybrain-malecns-v1-prebuilt
+      - name: Install flybrain
+        run: python -m pip install --upgrade pip && pip install flybrain==0.1.0
+      - name: Ensure MaleCNS
+        run: flybrain download
+      - name: Physical readback
+        run: |
+          flybrain info
+          test -s "$FLY_DATA/brain.npz"
+          test -s "$FLY_DATA/weights.npz"
+          sha256sum "$FLY_DATA/brain.npz" "$FLY_DATA/weights.npz"
+          sha256sum dev_frozen_v05.json oos_features_v05.json jarvisops_oos_predict_v05.py OOS_PROTOCOL_SHA256.txt
+      - name: Run blind prelabel inference
+        run: python jarvisops_oos_predict_v05.py
+      - name: Upload immutable prelabel predictions
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvisops-oos-prelabel-predictions-v05
+          path: oos_predictions_prelabel_v05.json
+          if-no-files-found: error
